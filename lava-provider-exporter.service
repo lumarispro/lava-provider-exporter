@@ -1,0 +1,23 @@
+[Unit]
+Description=Prometheus exporter for Lava provider state
+Documentation=https://github.com/lumarispro/lava-provider-exporter
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+DynamicUser=true
+ExecStart=/usr/bin/python3 /opt/lava-provider-exporter/lava_provider_exporter.py \
+  --provider lava@15ngms6me8r486xs3nda0y6p2d56gym687etymg \
+  --listen 127.0.0.1:9796 \
+  --interval 60
+Restart=always
+RestartSec=10
+
+NoNewPrivileges=true
+ProtectSystem=strict
+ProtectHome=true
+PrivateTmp=true
+
+[Install]
+WantedBy=multi-user.target
