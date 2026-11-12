@@ -31,6 +31,11 @@ python3 lava_provider_exporter.py --once
 | `--interval` | `60` | Seconds between polls |
 | `--timeout` | `15` | HTTP timeout per request |
 
+Each REST request gets up to two retries for timeouts, connection failures, or
+HTTP 500, 502, 503, and 504 responses. The timeout applies to each attempt.
+If the poll still fails, the exporter reports `lava_provider_up 0` and keeps the
+last successful provider metrics.
+
 ### systemd
 
 ```bash
