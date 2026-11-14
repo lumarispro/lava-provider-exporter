@@ -9,6 +9,7 @@ import json
 import logging
 import threading
 import time
+import urllib.error
 import urllib.request
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 
@@ -18,8 +19,21 @@ log = logging.getLogger("lava-provider-exporter")
 
 def fetch_json(url, timeout):
     req = urllib.request.Request(url, headers={"User-Agent": "lava-provider-exporter/1.0"})
-    with urllib.request.urlopen(req, timeout=timeout) as resp:
-        return json.load(resp)
+    for attempt in range(3):
+        try:
+            with urllib.request.urlopen(req, timeout=timeout) as resp:
+                return json.load(resp)
+        except (urllib.error.URLError, TimeoutError, ConnectionError) as exc:
+            if isinstance(exc, urllib.error.HTTPError):
+                retryable = exc.code in (500, 502, 503, 504)
+            else:
+                reason = exc.reason if isinstance(exc, urllib.error.URLError) else exc
+                retryable = isinstance(reason, (TimeoutError, ConnectionError))
+            if not retryable or attempt == 2:
+                raise
+            if isinstance(exc, urllib.error.HTTPError):
+                exc.close()
+            time.sleep(0.5 * 2 ** attempt)
 
 
 def esc(value):
