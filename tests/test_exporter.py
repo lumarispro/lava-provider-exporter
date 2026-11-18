@@ -72,3 +72,41 @@ class PollRetryTests(unittest.TestCase):
 
         fetch.assert_called_once()
         sleep.assert_not_called()
+
+
+class FailoverTests(unittest.TestCase):
+    def test_comma_separated_endpoints_are_parsed(self):
+        collector = exporter.Collector(" https://a.example/ ,https://b.example,", "provider", 15)
+        self.assertEqual(collector.rests, ["https://a.example", "https://b.example"])
+
+    def test_poll_fails_over_to_next_endpoint(self):
+        collector = exporter.Collector("https://a.invalid,https://b.invalid", "provider", 15)
+        not_found = urllib.error.HTTPError("https://a.invalid", 404, "Not found", None, io.BytesIO(b""))
+        responses = [
+            not_found,
+            io.BytesIO(b'{"stakeEntries": []}'),
+            urllib.error.HTTPError("https://a.invalid", 404, "Not found", None, io.BytesIO(b"")),
+            io.BytesIO(b'{"delegations": []}'),
+        ]
+        with (
+            patch.object(exporter.urllib.request, "urlopen", side_effect=responses) as fetch,
+            patch.object(exporter.time, "sleep"),
+        ):
+            collector.poll()
+
+        self.assertIn("lava_provider_up 1\n", collector.render())
+        hosts = [call.args[0].host for call in fetch.call_args_list]
+        self.assertEqual(hosts, ["a.invalid", "b.invalid", "a.invalid", "b.invalid"])
+
+    def test_poll_reports_down_when_every_endpoint_fails(self):
+        collector = exporter.Collector("https://a.invalid,https://b.invalid", "provider", 15)
+        with (
+            patch.object(exporter.urllib.request, "urlopen",
+                         side_effect=urllib.error.HTTPError("x", 404, "Not found", None, io.BytesIO(b""))) as fetch,
+            patch.object(exporter.time, "sleep"),
+            self.assertLogs(exporter.log, level="WARNING"),
+        ):
+            collector.poll()
+
+        self.assertIn("lava_provider_up 0\n", collector.render())
+        self.assertEqual(fetch.call_count, 2)

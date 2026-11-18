@@ -26,7 +26,7 @@ python3 lava_provider_exporter.py --once
 | Flag | Default | |
 |---|---|---|
 | `--provider` | Lumaris | Provider address (`lava@1…`) |
-| `--rest` | `https://lava.rest.lava.build` | Lava REST endpoint; point it at your own node if you run one |
+| `--rest` | `https://lava.rest.lava.build` | Lava REST endpoint; a comma-separated list fails over in order, e.g. your own node first |
 | `--listen` | `0.0.0.0:9796` | Where `/metrics` is served |
 | `--interval` | `60` | Seconds between polls |
 | `--timeout` | `15` | HTTP timeout per request |

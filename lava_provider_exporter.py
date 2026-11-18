@@ -42,7 +42,9 @@ def esc(value):
 
 class Collector:
     def __init__(self, rest, provider, timeout):
-        self.rest = rest.rstrip("/")
+        # rest: one URL, a comma-separated string, or a list; endpoints are tried in order
+        urls = rest.split(",") if isinstance(rest, str) else rest
+        self.rests = [u.strip().rstrip("/") for u in urls if u.strip()]
         self.provider = provider
         self.timeout = timeout
         self.lock = threading.Lock()
@@ -52,13 +54,22 @@ class Collector:
         self.last_success = 0.0
         self.scrape_seconds = 0.0
 
+    def fetch(self, path):
+        """GET path from the first endpoint that answers; fetch_json already retries each one."""
+        for i, rest in enumerate(self.rests):
+            try:
+                return fetch_json(rest + path, self.timeout)
+            except Exception as exc:
+                if i == len(self.rests) - 1:
+                    raise
+                log.info("%s failed, trying next endpoint: %s", rest, exc)
+
     def poll(self):
         started = time.time()
         try:
-            stake = fetch_json(f"{self.rest}/lavanet/lava/pairing/provider/{self.provider}/", self.timeout)
+            stake = self.fetch(f"/lavanet/lava/pairing/provider/{self.provider}/")
             entries = stake.get("stakeEntries") or []
-            delegations = fetch_json(
-                f"{self.rest}/lavanet/lava/dualstaking/delegator_providers/{self.provider}", self.timeout)
+            delegations = self.fetch(f"/lavanet/lava/dualstaking/delegator_providers/{self.provider}")
             self_del = sum(
                 int(d["amount"]["amount"]) for d in delegations.get("delegations", [])
                 if d.get("provider") == self.provider)
@@ -168,7 +179,8 @@ def make_handler(collector):
 def main():
     p = argparse.ArgumentParser(description=__doc__)
     p.add_argument("--provider", default="lava@15ngms6me8r486xs3nda0y6p2d56gym687etymg")
-    p.add_argument("--rest", default="https://lava.rest.lava.build", help="Lava REST (LCD) endpoint")
+    p.add_argument("--rest", default="https://lava.rest.lava.build",
+                   help="Lava REST (LCD) endpoint; comma-separated list to fail over in order")
     p.add_argument("--listen", default="0.0.0.0:9796", help="host:port to serve /metrics on")
     p.add_argument("--interval", type=int, default=60, help="seconds between polls")
     p.add_argument("--timeout", type=int, default=15, help="HTTP timeout per request")
