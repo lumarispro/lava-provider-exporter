@@ -181,7 +181,7 @@ def main():
     p.add_argument("--provider", default="lava@15ngms6me8r486xs3nda0y6p2d56gym687etymg")
     p.add_argument("--rest", default="https://lava.rest.lava.build",
                    help="Lava REST (LCD) endpoint; comma-separated list to fail over in order")
-    p.add_argument("--listen", default="0.0.0.0:9796", help="host:port to serve /metrics on")
+    p.add_argument("--listen", default="127.0.0.1:9796", help="host:port to serve /metrics on; 0.0.0.0:9796 to expose it")
     p.add_argument("--interval", type=int, default=60, help="seconds between polls")
     p.add_argument("--timeout", type=int, default=15, help="HTTP timeout per request")
     p.add_argument("--once", action="store_true", help="poll once, print metrics and exit")

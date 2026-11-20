@@ -27,7 +27,7 @@ python3 lava_provider_exporter.py --once
 |---|---|---|
 | `--provider` | Lumaris | Provider address (`lava@1…`) |
 | `--rest` | `https://lava.rest.lava.build` | Lava REST endpoint; a comma-separated list fails over in order, e.g. your own node first |
-| `--listen` | `0.0.0.0:9796` | Where `/metrics` is served |
+| `--listen` | `127.0.0.1:9796` | Where `/metrics` is served. Use `0.0.0.0:9796` when Prometheus scrapes from another host, and firewall the port |
 | `--interval` | `60` | Seconds between polls |
 | `--timeout` | `15` | HTTP timeout per request |
 
@@ -102,6 +102,14 @@ lava_provider_endpoints{chain="COSMOSHUB"} 1
 ```
 
 </details>
+
+## Tests
+
+Standard library only, run from the repository root:
+
+```bash
+PYTHONPATH=. python3 -m unittest discover -s tests
+```
 
 Dashboards and alert rules built on these metrics live in [grafana-dashboards](https://github.com/lumarispro/grafana-dashboards).
 
