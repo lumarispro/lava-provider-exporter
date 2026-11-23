@@ -111,8 +111,6 @@ Standard library only, run from the repository root:
 PYTHONPATH=. python3 -m unittest discover -s tests
 ```
 
-Dashboards and alert rules built on these metrics live in [grafana-dashboards](https://github.com/lumarispro/grafana-dashboards).
-
 ---
 
 <sub>MIT · [lumaris.space](https://lumaris.space)</sub>
